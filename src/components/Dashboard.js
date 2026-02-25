@@ -454,7 +454,12 @@ const Dashboard = ({ user, onLogout }) => {
               </div>
             )}
             
-            <div className="pricing-grid">
+            {loadingSubscription ? (
+  <div style={{ padding: '20px' }}>
+    <p>Checking your subscription...</p>
+  </div>
+) : (
+  <div className="pricing-grid">
               <div className={`pricing-card ${isCurrentPlan(STRIPE_PRICES.STARTER) ? 'current-plan' : ''}`}>
                 <div className="plan-name">Starter {isCurrentPlan(STRIPE_PRICES.STARTER) && <span className="current-badge">✓</span>}</div>
                 <div className="plan-price">
@@ -551,7 +556,7 @@ const Dashboard = ({ user, onLogout }) => {
                   {loadingCheckout ? 'Loading...' : 'Contact Sales'}
                 </button>
               </div>
-            </div>
+            </div>)}
           </div>
         );
       
