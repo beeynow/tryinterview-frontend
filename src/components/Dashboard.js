@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Dashboard.css';
 import { createCheckoutSession, STRIPE_PRICES, isStripeConfigured } from '../services/stripeService';
 
@@ -13,45 +13,49 @@ const Dashboard = ({ user, onLogout }) => {
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
 
-  // Fetch user's current subscription
-  useEffect(() => {
-    if (user?.uid) {
-      fetchSubscription();
-    }
-  }, [user]);
+  
 
-  const fetchSubscription = async () => {
-    try {
-      setLoadingSubscription(true);
-      const response = await fetch(`https://tryinterview-backend.vercel.app/api/check-subscription?userId=${user.uid}`);
-      const data = await response.json();
-      
-      if (data.hasSubscription && data.status === 'active') {
-        setCurrentSubscription(data);
-        console.log('✅ Active subscription found:', data);
-      } else {
-        setCurrentSubscription(null);
-        console.log('ℹ️ No active subscription');
-      }
-    } catch (error) {
-      console.error('Error fetching subscription:', error);
+  const fetchSubscription = useCallback(async () => {
+  if (!user?.uid) return;
+
+  try {
+    setLoadingSubscription(true);
+    const response = await fetch(
+      `https://tryinterview-backend.vercel.app/api/check-subscription?userId=${user.uid}`
+    );
+    const data = await response.json();
+
+    if (data.hasSubscription && data.status === 'active') {
+      setCurrentSubscription(data);
+      console.log('✅ Active subscription found:', data);
+    } else {
       setCurrentSubscription(null);
-    } finally {
-      setLoadingSubscription(false);
+      console.log('ℹ️ No active subscription');
     }
-  };
+  } catch (error) {
+    console.error('Error fetching subscription:', error);
+    setCurrentSubscription(null);
+  } finally {
+    setLoadingSubscription(false);
+  }
+}, [user?.uid]);
 
-  // Get plan name from price ID
-  const getPlanFromPriceId = (priceId) => {
-    if (!priceId) return 'Free';
+// Fetch user's current subscription
+  useEffect(() => {
+  fetchSubscription();
+}, [fetchSubscription]);
+
+  // // Get plan name from price ID
+  // const getPlanFromPriceId = (priceId) => {
+  //   if (!priceId) return 'Free';
     
-    if (priceId === STRIPE_PRICES.STARTER) return 'Starter';
-    if (priceId === STRIPE_PRICES.PROFESSIONAL) return 'Professional';
-    if (priceId === STRIPE_PRICES.PREMIUM) return 'Premium';
-    if (priceId === STRIPE_PRICES.ENTERPRISE) return 'Enterprise';
+  //   if (priceId === STRIPE_PRICES.STARTER) return 'Starter';
+  //   if (priceId === STRIPE_PRICES.PROFESSIONAL) return 'Professional';
+  //   if (priceId === STRIPE_PRICES.PREMIUM) return 'Premium';
+  //   if (priceId === STRIPE_PRICES.ENTERPRISE) return 'Enterprise';
     
-    return 'Unknown Plan';
-  };
+  //   return 'Unknown Plan';
+  // };
 
   // Handle subscription purchase
   const handleSubscribe = async (plan, priceId) => {
@@ -541,7 +545,7 @@ const Dashboard = ({ user, onLogout }) => {
                 </ul>
                 <button 
                   className="plan-btn" 
-                  onClick={() => handleSubscribe('enterprise', STRIPE_PRICES.enterprise)}
+                  onClick={() => handleSubscribe('Enterprise', STRIPE_PRICES.ENTERPRISE)}
                   disabled={loadingCheckout}
                 >
                   {loadingCheckout ? 'Loading...' : 'Contact Sales'}
@@ -573,7 +577,15 @@ const Dashboard = ({ user, onLogout }) => {
               </div>
               <div className="form-group">
                 <label>Member Since</label>
-                <input type="text" value={new Date(user.metadata?.creationTime).toLocaleDateString()} readOnly />
+                <input
+  type="text"
+  value={
+    user.metadata?.creationTime
+      ? new Date(user.metadata.creationTime).toLocaleDateString()
+      : ''
+  }
+  readOnly
+/>
               </div>
             </div>
           </div>
