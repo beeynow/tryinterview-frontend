@@ -23,7 +23,7 @@ const Dashboard = ({ user, onLogout }) => {
   const fetchSubscription = async () => {
     try {
       setLoadingSubscription(true);
-      const response = await fetch(`http://localhost:3002/api/check-subscription?userId=${user.uid}`);
+      const response = await fetch(`https://tryinterview-backend.vercel.app/api/check-subscription?userId=${user.uid}`);
       const data = await response.json();
       
       if (data.hasSubscription && data.status === 'active') {

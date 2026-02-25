@@ -14,7 +14,7 @@ export const STRIPE_PRICES = {
  */
 export const createCheckoutSession = async (priceId, user) => {
   try {
-    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3002';
+    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://tryinterview-backend.vercel.app';
     
     // Call backend API to create checkout session
     const response = await fetch(`${BACKEND_URL}/api/create-checkout-session`, {
@@ -54,7 +54,7 @@ export const createCheckoutSession = async (priceId, user) => {
  */
 export const createPortalSession = async (customerId) => {
   try {
-    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3002';
+    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://tryinterview-backend.vercel.app';
     
     const response = await fetch(`${BACKEND_URL}/api/create-portal-session`, {
       method: 'POST',
