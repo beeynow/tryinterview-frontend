@@ -1104,6 +1104,11 @@ input:checked + .slider:before {
     width: 280px;
   }
   
+  .dashboard-sidebar.mobile-open .nav-label,
+  .dashboard-sidebar.mobile-open .sidebar-logo span {
+    display: block !important;
+  }
+  
   .dashboard-sidebar.collapsed .nav-label,
   .dashboard-sidebar.collapsed .sidebar-logo span {
     display: block;
@@ -1121,28 +1126,46 @@ input:checked + .slider:before {
   
   /* Header responsive */
   .content-header {
-    padding: 1rem;
+    padding: 1rem 1rem 1rem 5rem; /* Extra left padding for hamburger button */
     flex-direction: row;
-    gap: 1rem;
+    gap: 0.75rem;
     align-items: center;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 50;
   }
   
   .header-left {
     flex: 1;
+    min-width: 0; /* Allow text truncation */
   }
   
   .header-left h2 {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     margin-bottom: 0.25rem;
+    font-weight: 600;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .header-left p {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .user-avatar {
     width: 40px;
     height: 40px;
+    border: 2px solid rgba(59, 130, 246, 0.5);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
   }
   
   /* Content body */
@@ -1601,5 +1624,74 @@ input:checked + .slider:before {
   .pricing-card,
   .feature-card {
     page-break-inside: avoid;
+  }
+}
+
+/* Mobile Header Enhancements */
+@media (max-width: 768px) {
+  .content-header {
+    padding: 0.875rem 1rem 0.875rem 4.5rem;
+    min-height: 60px;
+  }
+  
+  .header-left h2 {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+  
+  .header-left p {
+    font-size: 0.7rem;
+  }
+  
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-header {
+    padding: 0.75rem 0.75rem 0.75rem 4rem;
+    min-height: 56px;
+  }
+  
+  .header-left h2 {
+    font-size: 0.95rem;
+  }
+  
+  .header-left p {
+    font-size: 0.65rem;
+  }
+  
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Fix nav labels in mobile menu */
+@media (max-width: 768px) {
+  .dashboard-sidebar.mobile-open {
+    width: 280px;
+  }
+  
+  .dashboard-sidebar.mobile-open .nav-label {
+    display: inline-block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  
+  .dashboard-sidebar.mobile-open .sidebar-logo span {
+    display: inline-block !important;
+  }
+  
+  .dashboard-sidebar.mobile-open .nav-item {
+    justify-content: flex-start;
+    padding: 0.875rem 1.25rem;
+  }
+  
+  .dashboard-sidebar.mobile-open .nav-icon {
+    margin-right: 0.875rem;
   }
 }

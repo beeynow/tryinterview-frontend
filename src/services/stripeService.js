@@ -26,12 +26,22 @@ export const createCheckoutSession = async (priceId, user) => {
   try {
     const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://tryinterview-backend.vercel.app';
     
+    console.log('🔵 Creating checkout session...', {
+      backend: BACKEND_URL,
+      priceId: priceId.substring(0, 20) + '...',
+      userId: user.uid.substring(0, 10) + '...',
+      email: user.email
+    });
+    
     // Call backend API to create checkout session
     const response = await fetch(`${BACKEND_URL}/api/create-checkout-session`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
+      mode: 'cors',
+      credentials: 'omit',
       body: JSON.stringify({
         priceId,
         userId: user.uid,
@@ -39,20 +49,32 @@ export const createCheckoutSession = async (priceId, user) => {
       }),
     });
 
+    console.log('🔵 Response status:', response.status);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to create checkout session');
+      let errorMessage = 'Failed to create checkout session';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch (e) {
+        const text = await response.text();
+        errorMessage = text || `Server returned ${response.status}`;
+      }
+      throw new Error(errorMessage);
     }
 
-    const { url } = await response.json();
+    const data = await response.json();
+    console.log('🔵 Checkout session created:', data);
     
     // Redirect to Stripe Checkout
-    if (url) {
-      window.location.href = url;
+    if (data.url) {
+      console.log('🔵 Redirecting to Stripe...');
+      window.location.href = data.url;
     } else {
       throw new Error('No checkout URL received from backend');
     }
   } catch (error) {
+    console.error('❌ Checkout error:', error);
     throw error;
   }
 };

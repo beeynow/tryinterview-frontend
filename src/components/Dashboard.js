@@ -17,29 +17,48 @@ const Dashboard = ({ user, onLogout }) => {
   
 
   const fetchSubscription = useCallback(async () => {
-  if (!user?.uid) return;
+    if (!user?.uid) return;
 
-  try {
-    setLoadingSubscription(true);
-    const response = await fetch(
-      `https://tryinterview-backend.vercel.app/api/check-subscription?userId=${user.uid}`
-    );
-    const data = await response.json();
+    try {
+      setLoadingSubscription(true);
+      const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://tryinterview-backend.vercel.app';
+      
+      console.log('🔍 Checking subscription for user:', user.uid.substring(0, 10) + '...');
+      
+      const response = await fetch(
+        `${BACKEND_URL}/api/check-subscription?userId=${user.uid}`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+          mode: 'cors',
+        }
+      );
 
-    if (data.hasSubscription && data.status === 'active') {
-      setCurrentSubscription(data);
-      console.log('✅ Active subscription found:', data);
-    } else {
+      if (!response.ok) {
+        console.warn('⚠️ Subscription check failed:', response.status);
+        setCurrentSubscription(null);
+        return;
+      }
+
+      const data = await response.json();
+      console.log('📊 Subscription data:', data);
+
+      if (data.hasSubscription && data.status === 'active') {
+        setCurrentSubscription(data);
+        console.log('✅ Active subscription found:', data.planName || 'Unknown Plan');
+      } else {
+        setCurrentSubscription(null);
+        console.log('ℹ️ No active subscription');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching subscription:', error);
       setCurrentSubscription(null);
-      console.log('ℹ️ No active subscription');
+    } finally {
+      setLoadingSubscription(false);
     }
-  } catch (error) {
-    console.error('Error fetching subscription:', error);
-    setCurrentSubscription(null);
-  } finally {
-    setLoadingSubscription(false);
-  }
-}, [user?.uid]);
+  }, [user?.uid]);
 
 // Fetch user's current subscription
   useEffect(() => {
