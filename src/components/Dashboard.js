@@ -13,6 +13,8 @@ const Dashboard = ({ user, onLogout }) => {
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successModalData, setSuccessModalData] = useState(null);
 
   
 
@@ -61,9 +63,68 @@ const Dashboard = ({ user, onLogout }) => {
   }, [user?.uid]);
 
 // Fetch user's current subscription
-  useEffect(() => {
+  // Check for payment success on page load
+useEffect(() => {
+  const checkPaymentSuccess = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    const success = urlParams.get('success');
+
+    if (success === 'true' && sessionId && user?.uid) {
+      console.log('🎉 Payment successful! Session ID:', sessionId);
+      console.log('🔍 Verifying payment and fetching subscription...');
+      
+      try {
+        const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://tryinterview-backend.vercel.app';
+        
+        // Verify payment with backend
+        const response = await fetch(
+          `${BACKEND_URL}/api/verify-payment?session_id=${sessionId}&userId=${user.uid}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Payment verified:', data);
+          
+          if (data.success && data.subscription) {
+            // Update subscription state immediately
+            setCurrentSubscription({
+              hasSubscription: true,
+              status: data.subscription.status,
+              priceId: data.subscription.priceId,
+              planName: data.subscription.planName,
+              currentPeriodEnd: data.subscription.currentPeriodEnd,
+              cancelAtPeriodEnd: data.subscription.cancelAtPeriodEnd,
+              subscription: data.subscription
+            });
+            
+            console.log('🎊 Subscription activated:', data.subscription.planName);
+            
+            // Show success modal
+            setSuccessModalData(data.subscription);
+            setShowSuccessModal(true);
+            
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname + window.location.hash.split('?')[0]);
+          }
+        } else {
+          console.warn('⚠️ Payment verification failed');
+        }
+      } catch (error) {
+        console.error('❌ Error verifying payment:', error);
+      }
+    }
+  };
+
+  checkPaymentSuccess();
   fetchSubscription();
-}, [fetchSubscription]);
+}, [fetchSubscription, user?.uid]);
 
   // // Get plan name from price ID
   // const getPlanFromPriceId = (priceId) => {
@@ -509,7 +570,10 @@ const Dashboard = ({ user, onLogout }) => {
 ) : (
   <div className="pricing-grid">
               <div className={`pricing-card ${isCurrentPlan(STRIPE_PRICES.STARTER) ? 'current-plan' : ''}`}>
-                <div className="plan-name">Starter {isCurrentPlan(STRIPE_PRICES.STARTER) && <span className="current-badge">✓</span>}</div>
+                <div className="plan-header">
+                  <div className="plan-name">Starter</div>
+                  {isCurrentPlan(STRIPE_PRICES.STARTER) && <span className="current-badge">Current Plan</span>}
+                </div>
                 <div className="plan-price">
                   <span className="currency">$</span>
                   <span className="amount">9</span>
@@ -527,13 +591,16 @@ const Dashboard = ({ user, onLogout }) => {
                   onClick={() => handleSubscribe('Starter', STRIPE_PRICES.STARTER)}
                   disabled={loadingCheckout || isCurrentPlan(STRIPE_PRICES.STARTER)}
                 >
-                  {isCurrentPlan(STRIPE_PRICES.STARTER) ? 'Current Plan' : loadingCheckout ? 'Loading...' : 'Choose Plan'}
+                  {isCurrentPlan(STRIPE_PRICES.STARTER) ? '✓ Active' : loadingCheckout ? 'Processing...' : 'Choose Plan'}
                 </button>
               </div>
 
               <div className={`pricing-card popular ${isCurrentPlan(STRIPE_PRICES.PROFESSIONAL) ? 'current-plan' : ''}`}>
                 <div className="popular-badge">Most Popular</div>
-                <div className="plan-name">Professional {isCurrentPlan(STRIPE_PRICES.PROFESSIONAL) && <span className="current-badge">✓</span>}</div>
+                <div className="plan-header">
+                  <div className="plan-name">Professional</div>
+                  {isCurrentPlan(STRIPE_PRICES.PROFESSIONAL) && <span className="current-badge">Current Plan</span>}
+                </div>
                 <div className="plan-price">
                   <span className="currency">$</span>
                   <span className="amount">25</span>
@@ -552,12 +619,15 @@ const Dashboard = ({ user, onLogout }) => {
                   onClick={() => handleSubscribe('Professional', STRIPE_PRICES.PROFESSIONAL)}
                   disabled={loadingCheckout || isCurrentPlan(STRIPE_PRICES.PROFESSIONAL)}
                 >
-                  {isCurrentPlan(STRIPE_PRICES.PROFESSIONAL) ? 'Current Plan' : loadingCheckout ? 'Loading...' : 'Choose Plan'}
+                  {isCurrentPlan(STRIPE_PRICES.PROFESSIONAL) ? '✓ Active' : loadingCheckout ? 'Processing...' : 'Choose Plan'}
                 </button>
               </div>
 
               <div className={`pricing-card ${isCurrentPlan(STRIPE_PRICES.PREMIUM) ? 'current-plan' : ''}`}>
-                <div className="plan-name">Premium {isCurrentPlan(STRIPE_PRICES.PREMIUM) && <span className="current-badge">✓</span>}</div>
+                <div className="plan-header">
+                  <div className="plan-name">Premium</div>
+                  {isCurrentPlan(STRIPE_PRICES.PREMIUM) && <span className="current-badge">Current Plan</span>}
+                </div>
                 <div className="plan-price">
                   <span className="currency">$</span>
                   <span className="amount">50</span>
@@ -576,7 +646,7 @@ const Dashboard = ({ user, onLogout }) => {
                   onClick={() => handleSubscribe('Premium', STRIPE_PRICES.PREMIUM)}
                   disabled={loadingCheckout || isCurrentPlan(STRIPE_PRICES.PREMIUM)}
                 >
-                  {isCurrentPlan(STRIPE_PRICES.PREMIUM) ? 'Current Plan' : loadingCheckout ? 'Loading...' : 'Choose Plan'}
+                  {isCurrentPlan(STRIPE_PRICES.PREMIUM) ? '✓ Active' : loadingCheckout ? 'Processing...' : 'Choose Plan'}
                 </button>
               </div>
 
@@ -707,6 +777,53 @@ const Dashboard = ({ user, onLogout }) => {
 
   return (
     <div className="modern-dashboard">
+      {/* Payment Success Modal */}
+      {showSuccessModal && successModalData && (
+        <div className="success-modal-overlay" onClick={() => setShowSuccessModal(false)}>
+          <div className="success-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="success-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+            </div>
+            
+            <h2>Payment Successful!</h2>
+            <div className="plan-name">{successModalData.planName} Plan</div>
+            <p>Your subscription is now active and ready to use!</p>
+            
+            <div className="success-details">
+              <div className="success-detail-item">
+                <span className="success-detail-label">Plan</span>
+                <span className="success-detail-value">{successModalData.planName}</span>
+              </div>
+              <div className="success-detail-item">
+                <span className="success-detail-label">Status</span>
+                <span className="success-detail-value" style={{color: '#10b981'}}>Active</span>
+              </div>
+              <div className="success-detail-item">
+                <span className="success-detail-label">Amount</span>
+                <span className="success-detail-value">
+                  ${successModalData.amount} {successModalData.currency}/{successModalData.interval}
+                </span>
+              </div>
+              <div className="success-detail-item">
+                <span className="success-detail-label">Next Billing</span>
+                <span className="success-detail-value">
+                  {new Date(successModalData.currentPeriodEnd).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+            
+            <button 
+              className="success-modal-btn"
+              onClick={() => setShowSuccessModal(false)}
+            >
+              Start Using {successModalData.planName}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Menu Button */}
       <button 
         className="mobile-menu-toggle" 

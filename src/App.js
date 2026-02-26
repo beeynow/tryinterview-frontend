@@ -18,6 +18,7 @@ import FAQ from './components/FAQ';
 import Cookies from './components/Cookies';
 import Loading from './components/Loading';
 import OnboardingModal from './components/OnboardingModal';
+import PaymentSuccess from './components/PaymentSuccess';
 import './App.css';
 
 function App() {
@@ -92,6 +93,19 @@ function App() {
 
   if (loading) {
     return <Loading />;
+  }
+
+  // Check if this is a payment success page
+  const urlParams = new URLSearchParams(window.location.search);
+  const isPaymentSuccess = urlParams.get('payment_success') === 'true' && urlParams.get('session_id');
+  
+  // Show payment success page if redirected from Stripe
+  if (user && isPaymentSuccess) {
+    return (
+      <div className="App">
+        <PaymentSuccess user={user} />
+      </div>
+    );
   }
 
   // If user is logged in, show dashboard (unless onboarding is active)
