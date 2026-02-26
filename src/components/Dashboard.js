@@ -9,6 +9,7 @@ const Dashboard = ({ user, onLogout }) => {
     return hash || 'interview';
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
@@ -64,9 +65,13 @@ const Dashboard = ({ user, onLogout }) => {
       return;
     }
 
-    // Check if priceId looks like a placeholder
-    if (!priceId || !priceId.startsWith('price_') || priceId.length < 20) {
-      const message = `⚠️ Stripe Product Setup Required\n\nYou need to create the ${plan} plan in Stripe:\n\n1. Go to https://dashboard.stripe.com/test/products\n2. Click "+ Add product"\n3. Create a product for this plan\n4. Copy the Price ID (starts with "price_")\n5. Update .env.local:\n   REACT_APP_STRIPE_PRICE_${plan.toUpperCase()}=price_xxxxx\n6. Server will auto-reload\n\nCurrent placeholder: ${priceId}\n\nSee STRIPE_SETUP.md for step-by-step guide.`;
+    // Check if priceId is valid (accepts both price_ and prod_ IDs)
+    const isValidPriceId = priceId && 
+                          (priceId.startsWith('price_') || priceId.startsWith('prod_')) && 
+                          priceId.length >= 20;
+    
+    if (!isValidPriceId) {
+      const message = `⚠️ Stripe Product Setup Required\n\nYou need to create the ${plan} plan in Stripe:\n\n1. Go to https://dashboard.stripe.com/test/products\n2. Click "+ Add product"\n3. Create a product for this plan\n4. Copy the Price ID (starts with "price_") from the pricing section\n   Note: Product IDs start with "prod_" - you need the PRICE ID!\n5. Update .env.local:\n   REACT_APP_STRIPE_PRICE_${plan.toUpperCase()}=price_xxxxx\n6. Restart the server\n\nCurrent value: ${priceId || 'undefined'}\n\nSee STRIPE_SETUP.md for step-by-step guide.`;
       alert(message);
       return;
     }
@@ -82,7 +87,30 @@ const Dashboard = ({ user, onLogout }) => {
       await createCheckoutSession(priceId, user);
       // Subscription will be updated via webhook after successful payment
     } catch (error) {
-      alert('❌ Payment Error\n\nFailed to start checkout. Please try again.\n\nIf the problem persists, check:\n• Your internet connection\n• Stripe Dashboard for any issues\n• Browser console for error details');
+      console.error('Checkout error:', error);
+      
+      // Display detailed error message
+      let errorMessage = '❌ Payment Error\n\nFailed to start checkout.\n\n';
+      
+      if (error.message && error.message.includes('prod_')) {
+        errorMessage += '⚠️ You provided a Product ID (starts with "prod_")\n\n';
+        errorMessage += 'You need to use the PRICE ID instead:\n\n';
+        errorMessage += '1. Go to https://dashboard.stripe.com/test/products\n';
+        errorMessage += '2. Click on your product\n';
+        errorMessage += '3. Find the "Pricing" section\n';
+        errorMessage += '4. Copy the Price ID (starts with "price_")\n';
+        errorMessage += '5. Update your .env.local file\n';
+        errorMessage += '6. Restart the server';
+      } else if (error.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += 'Please try again.\n\nIf the problem persists, check:\n';
+        errorMessage += '• Your internet connection\n';
+        errorMessage += '• Stripe Dashboard for any issues\n';
+        errorMessage += '• Browser console for error details';
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoadingCheckout(false);
     }
@@ -97,6 +125,7 @@ const Dashboard = ({ user, onLogout }) => {
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     window.location.hash = `dashboard/${tabId}`;
+    setMobileMenuOpen(false); // Close mobile menu when tab is selected
   };
 
   // Listen for hash changes
@@ -659,8 +688,35 @@ const Dashboard = ({ user, onLogout }) => {
 
   return (
     <div className="modern-dashboard">
+      {/* Mobile Menu Button */}
+      <button 
+        className="mobile-menu-toggle" 
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        aria-label="Toggle menu"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          {mobileMenuOpen ? (
+            <path d="M18 6L6 18M6 6l12 12" />
+          ) : (
+            <>
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </>
+          )}
+        </svg>
+      </button>
+
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="mobile-overlay" 
+          onClick={() => setMobileMenuOpen(false)}
+        ></div>
+      )}
+
       {/* Left Sidebar */}
-      <aside className={`dashboard-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+      <aside className={`dashboard-sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
             <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="TryInterview" />

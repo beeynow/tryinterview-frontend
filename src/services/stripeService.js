@@ -1,10 +1,20 @@
 // Price IDs from environment variables
 export const STRIPE_PRICES = {
-  starter: process.env.REACT_APP_STRIPE_PRICE_STARTER,
-  professional: process.env.REACT_APP_STRIPE_PRICE_PROFESSIONAL,
-  premium: process.env.REACT_APP_STRIPE_PRICE_PREMIUM,
-  enterprise: process.env.REACT_APP_STRIPE_PRICE_ENTERPRISE,
+  STARTER: process.env.REACT_APP_STRIPE_PRICE_STARTER,
+  PROFESSIONAL: process.env.REACT_APP_STRIPE_PRICE_PROFESSIONAL,
+  PREMIUM: process.env.REACT_APP_STRIPE_PRICE_PREMIUM,
+  ENTERPRISE: process.env.REACT_APP_STRIPE_PRICE_ENTERPRISE,
 };
+
+// Debug: Log loaded Price IDs in development
+if (process.env.NODE_ENV === 'development') {
+  console.log('🔧 Stripe Price IDs Loaded:', {
+    STARTER: STRIPE_PRICES.STARTER ? STRIPE_PRICES.STARTER.substring(0, 20) + '...' : '❌ undefined',
+    PROFESSIONAL: STRIPE_PRICES.PROFESSIONAL ? STRIPE_PRICES.PROFESSIONAL.substring(0, 20) + '...' : '❌ undefined',
+    PREMIUM: STRIPE_PRICES.PREMIUM ? STRIPE_PRICES.PREMIUM.substring(0, 20) + '...' : '❌ undefined',
+    ENTERPRISE: STRIPE_PRICES.ENTERPRISE ? STRIPE_PRICES.ENTERPRISE.substring(0, 20) + '...' : '❌ undefined',
+  });
+}
 
 /**
  * Redirect to Stripe Checkout for subscription

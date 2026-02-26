@@ -1,0 +1,144 @@
+═══════════════════════════════════════════════════════════════════════
+  HOW TO GET STRIPE PRICE IDs (Step-by-Step Visual Guide)
+═══════════════════════════════════════════════════════════════════════
+
+YOUR CURRENT SETUP (INCORRECT):
+─────────────────────────────────────────────────────────────────────
+You have Product IDs in your .env.local file:
+  • REACT_APP_STRIPE_PRICE_STARTER=prod_U2rgEa9MbvB4bG
+  • REACT_APP_STRIPE_PRICE_PROFESSIONAL=prod_U2rgzIwdqKroz0
+  • REACT_APP_STRIPE_PRICE_PREMIUM=prod_U2rgZmsaq35avd
+  • REACT_APP_STRIPE_PRICE_ENTERPRISE=prod_U2rgXIw1yNVCfy
+
+⚠️ These start with "prod_" which are PRODUCT IDs, not PRICE IDs!
+
+═══════════════════════════════════════════════════════════════════════
+STEP-BY-STEP INSTRUCTIONS:
+═══════════════════════════════════════════════════════════════════════
+
+STEP 1: Open Stripe Dashboard
+──────────────────────────────────────────────────────────────────────
+Go to: https://dashboard.stripe.com/test/products
+
+You should see your 4 products listed.
+
+
+STEP 2: Click on "Starter Plan"
+──────────────────────────────────────────────────────────────────────
+Visual representation of what you'll see:
+
+┌────────────────────────────────────────────────────────────────┐
+│ Starter Plan                                   [Edit] [•••]    │
+│ ID: prod_U2rgEa9MbvB4bG  ← ❌ This is Product ID (DON'T USE)  │
+│                                                                │
+│ Description: Basic interview preparation                      │
+│                                                                │
+│ ╔══════════════════════════════════════════════════════════╗  │
+│ ║ Pricing                                                  ║  │
+│ ║ ┌──────────────────────────────────────────────────────┐ ║  │
+│ ║ │ Recurring • Monthly                                  │ ║  │
+│ ║ │ $9.00 USD                                            │ ║  │
+│ ║ │                                                      │ ║  │
+│ ║ │ ID: price_1QrPb8JZ1lNpfS3W...  ← ✅ COPY THIS!      │ ║  │
+│ ║ └──────────────────────────────────────────────────────┘ ║  │
+│ ╚══════════════════════════════════════════════════════════╝  │
+└────────────────────────────────────────────────────────────────┘
+
+WHAT TO COPY: The ID in the "Pricing" section that starts with "price_"
+
+
+STEP 3: Copy All 4 Price IDs
+──────────────────────────────────────────────────────────────────────
+
+For Starter Plan (prod_U2rgEa9MbvB4bG):
+  → Click the product
+  → Find "Pricing" section
+  → Copy the Price ID (price_...)
+  → Write it down as: STARTER_PRICE_ID
+
+For Professional Plan (prod_U2rgzIwdqKroz0):
+  → Repeat the same process
+  → Write it down as: PROFESSIONAL_PRICE_ID
+
+For Premium Plan (prod_U2rgZmsaq35avd):
+  → Repeat the same process
+  → Write it down as: PREMIUM_PRICE_ID
+
+For Enterprise Plan (prod_U2rgXIw1yNVCfy):
+  → Repeat the same process
+  → Write it down as: ENTERPRISE_PRICE_ID
+
+
+STEP 4: Update Your .env.local File
+──────────────────────────────────────────────────────────────────────
+
+1. Open: tryinterview-frontend/.env.local
+
+2. Find these lines:
+   REACT_APP_STRIPE_PRICE_STARTER=prod_U2rgEa9MbvB4bG
+   REACT_APP_STRIPE_PRICE_PROFESSIONAL=prod_U2rgzIwdqKroz0
+   REACT_APP_STRIPE_PRICE_PREMIUM=prod_U2rgZmsaq35avd
+   REACT_APP_STRIPE_PRICE_ENTERPRISE=prod_U2rgXIw1yNVCfy
+
+3. Replace with the Price IDs you copied:
+   REACT_APP_STRIPE_PRICE_STARTER=price_YOUR_STARTER_PRICE_ID
+   REACT_APP_STRIPE_PRICE_PROFESSIONAL=price_YOUR_PROFESSIONAL_PRICE_ID
+   REACT_APP_STRIPE_PRICE_PREMIUM=price_YOUR_PREMIUM_PRICE_ID
+   REACT_APP_STRIPE_PRICE_ENTERPRISE=price_YOUR_ENTERPRISE_PRICE_ID
+
+4. Save the file
+
+
+STEP 5: Restart Your Server
+──────────────────────────────────────────────────────────────────────
+
+In your terminal:
+  1. Stop the current server (press Ctrl+C)
+  2. Start it again: npm start
+  3. Wait for it to fully load
+
+
+STEP 6: Test the Checkout
+──────────────────────────────────────────────────────────────────────
+
+1. Go to your app: http://localhost:3000
+2. Sign in
+3. Go to Dashboard → Subscription
+4. Click "Choose Plan" on any tier
+5. You should now be redirected to Stripe Checkout!
+
+Use test card: 4242 4242 4242 4242
+(Any future date, any CVC, any ZIP)
+
+
+═══════════════════════════════════════════════════════════════════════
+QUICK REFERENCE:
+═══════════════════════════════════════════════════════════════════════
+
+Product ID vs Price ID:
+  Product ID: prod_ABC123xyz  ← Identifies the product
+  Price ID:   price_1ABC...   ← Identifies the pricing ✅
+
+You need: PRICE IDs
+You have: PRODUCT IDs
+
+Location in Stripe:
+  Products page → Click product → Scroll to "Pricing" → Copy Price ID
+
+What it looks like:
+  ✅ price_1QrPb8JZ1lNpfS3WXXXxxxXX  (correct)
+  ❌ prod_U2rgEa9MbvB4bG              (wrong)
+
+
+═══════════════════════════════════════════════════════════════════════
+NEED HELP?
+═══════════════════════════════════════════════════════════════════════
+
+If you're still stuck, check:
+  • STRIPE_PRICE_ID_GUIDE.md - Detailed guide with more visuals
+  • STRIPE_SETUP.md - Complete setup walkthrough
+  • Browser console - Look for any error messages
+
+Or ask for help with:
+  • Screenshot of your Stripe product page
+  • The exact error message you're seeing

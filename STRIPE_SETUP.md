@@ -17,6 +17,8 @@ This guide will help you set up Stripe payment integration for TryInterview subs
 
 ## Step 2: Create Subscription Products and Prices
 
+⚠️ **IMPORTANT:** You need the **Price ID** (starts with `price_`), NOT the Product ID (starts with `prod_`)!
+
 1. In Stripe Dashboard, go to **Products → Add product**
 2. Create **4 products** with the following details:
 
@@ -25,28 +27,38 @@ This guide will help you set up Stripe payment integration for TryInterview subs
 - **Description**: Basic interview preparation
 - **Pricing**: $9.00 USD / month
 - **Billing period**: Monthly recurring
-- Copy the **Price ID** (starts with `price_`)
+- **How to get Price ID:**
+  1. After creating the product, click on it
+  2. Look for the "Pricing" section
+  3. Copy the **Price ID** (starts with `price_`, NOT the Product ID that starts with `prod_`)
 
 ### Product 2: Professional Plan
 - **Name**: Professional Plan
 - **Description**: Advanced interview preparation
 - **Pricing**: $25.00 USD / month
 - **Billing period**: Monthly recurring
-- Copy the **Price ID**
+- Copy the **Price ID** (see above)
 
 ### Product 3: Premium Plan
 - **Name**: Premium Plan
 - **Description**: Premium coaching and preparation
 - **Pricing**: $50.00 USD / month
 - **Billing period**: Monthly recurring
-- Copy the **Price ID**
+- Copy the **Price ID** (see above)
 
 ### Product 4: Enterprise Plan
 - **Name**: Enterprise Plan
 - **Description**: Complete enterprise solution
 - **Pricing**: $99.00 USD / month
 - **Billing period**: Monthly recurring
-- Copy the **Price ID**
+- Copy the **Price ID** (see above)
+
+### 🔍 Understanding Product ID vs Price ID
+
+- **Product ID** (starts with `prod_`): Identifies the product itself (e.g., "Starter Plan")
+- **Price ID** (starts with `price_`): Identifies the pricing for that product (e.g., "$9/month")
+- ✅ **You MUST use Price ID** for checkout sessions
+- ❌ Using Product ID will cause errors
 
 ## Step 3: Configure Environment Variables
 
