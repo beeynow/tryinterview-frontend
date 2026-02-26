@@ -68,9 +68,9 @@ useEffect(() => {
   const checkPaymentSuccess = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const sessionId = urlParams.get('session_id');
-    const success = urlParams.get('success');
+    const paymentSuccess = urlParams.get('payment_success');
 
-    if (success === 'true' && sessionId && user?.uid) {
+    if (paymentSuccess === 'true' && sessionId && user?.uid) {
       console.log('🎉 Payment successful! Session ID:', sessionId);
       console.log('🔍 Verifying payment and fetching subscription...');
       

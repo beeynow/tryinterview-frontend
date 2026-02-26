@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './PaymentSuccess.css';
 
 const PaymentSuccess = ({ user }) => {
-  const navigate = useNavigate();
   const [verificationStatus, setVerificationStatus] = useState('verifying'); // verifying, success, error
   const [subscriptionData, setSubscriptionData] = useState(null);
   const [countdown, setCountdown] = useState(5);
@@ -82,7 +80,7 @@ const PaymentSuccess = ({ user }) => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          navigate('/#dashboard/subscription');
+          window.location.href = '/#dashboard/subscription';
           return 0;
         }
         return prev - 1;
@@ -111,7 +109,7 @@ const PaymentSuccess = ({ user }) => {
   };
 
   const handleGoToDashboard = () => {
-    navigate('/#dashboard/subscription');
+    window.location.href = '/#dashboard/subscription';
   };
 
   if (verificationStatus === 'verifying') {
