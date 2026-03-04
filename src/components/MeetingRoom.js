@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   StreamVideo,
   StreamCall,
-  CallControls,
   SpeakerLayout,
   CallParticipantsList,
   useCallStateHooks,
