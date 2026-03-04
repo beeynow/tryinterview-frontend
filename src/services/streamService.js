@@ -14,16 +14,6 @@ const STREAM_CONFIG = {
  */
 export const generateUserToken = async (userId) => {
   try {
-    // Create a server-side Stream client to generate tokens
-    const crypto = window.crypto || window.msCrypto;
-    
-    // Generate token payload
-    const payload = {
-      user_id: userId,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7), // 7 days
-    };
-    
     // For client-side implementation, we'll use a simpler approach
     // In production, you MUST call your backend API endpoint that generates this token
     
@@ -212,7 +202,7 @@ export const getMeetingUrl = (meetingId) => {
   return `${baseUrl}/#dashboard/meeting?id=${meetingId}`;
 };
 
-export default {
+const streamService = {
   STREAM_CONFIG,
   initializeStreamClient,
   createMeeting,
@@ -221,3 +211,5 @@ export default {
   generateMeetingId,
   getMeetingUrl,
 };
+
+export default streamService;
