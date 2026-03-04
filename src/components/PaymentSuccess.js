@@ -80,7 +80,10 @@ const PaymentSuccess = ({ user }) => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          window.location.href = '/#dashboard/subscription';
+          // Pass session_id so Dashboard can verify + save the plan immediately
+          const urlParams = new URLSearchParams(window.location.search);
+          const sessionId = urlParams.get('session_id');
+          window.location.href = `/?payment_success=true&session_id=${sessionId}#dashboard/subscription`;
           return 0;
         }
         return prev - 1;
@@ -109,7 +112,9 @@ const PaymentSuccess = ({ user }) => {
   };
 
   const handleGoToDashboard = () => {
-    window.location.href = '/#dashboard/subscription';
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    window.location.href = `/?payment_success=true&session_id=${sessionId}#dashboard/subscription`;
   };
 
   if (verificationStatus === 'verifying') {

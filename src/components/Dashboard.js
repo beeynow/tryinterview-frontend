@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './Dashboard.css';
+import Certificate from './Certificate';
+import MeetingRoom from './MeetingRoom';
 import { createCheckoutSession, STRIPE_PRICES, isStripeConfigured } from '../services/stripeService';
 
 const Dashboard = ({ user, onLogout }) => {
@@ -15,6 +17,8 @@ const Dashboard = ({ user, onLogout }) => {
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successModalData, setSuccessModalData] = useState(null);
+  const [showCertificate, setShowCertificate] = useState(false);
+  const [certificateData, setCertificateData] = useState(null);
 
   
 
@@ -25,7 +29,7 @@ const Dashboard = ({ user, onLogout }) => {
       setLoadingSubscription(true);
       const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://tryinterview-backend.vercel.app';
       
-      console.log('🔍 Checking subscription for user:', user.uid.substring(0, 10) + '...');
+      console.log('🔍 Fetching subscription for user:', user.uid.substring(0, 10) + '...');
       
       const response = await fetch(
         `${BACKEND_URL}/api/check-subscription?userId=${user.uid}`,
@@ -45,11 +49,32 @@ const Dashboard = ({ user, onLogout }) => {
       }
 
       const data = await response.json();
-      console.log('📊 Subscription data:', data);
+      console.log('📊 Full subscription response:', data);
 
       if (data.hasSubscription && data.status === 'active') {
-        setCurrentSubscription(data);
-        console.log('✅ Active subscription found:', data.planName || 'Unknown Plan');
+        // Normalize the data structure
+        const normalizedData = {
+          hasSubscription: true,
+          status: data.status,
+          priceId: data.priceId || data.price_id,
+          planName: data.planName || data.plan_name,
+          subscriptionId: data.subscriptionId || data.subscription_id,
+          customerId: data.customerId || data.customer_id,
+          currentPeriodEnd: data.currentPeriodEnd || data.current_period_end,
+          currentPeriodStart: data.currentPeriodStart || data.current_period_start,
+          cancelAtPeriodEnd: data.cancelAtPeriodEnd || data.cancel_at_period_end,
+          amount: data.amount,
+          currency: data.currency,
+          interval: data.interval,
+          subscription: data.subscription || data
+        };
+        
+        setCurrentSubscription(normalizedData);
+        console.log('✅ Active subscription set:', {
+          planName: normalizedData.planName,
+          priceId: normalizedData.priceId,
+          status: normalizedData.status
+        });
       } else {
         setCurrentSubscription(null);
         console.log('ℹ️ No active subscription');
@@ -93,28 +118,37 @@ useEffect(() => {
           console.log('✅ Payment verified:', data);
           
           if (data.success && data.subscription) {
-            // Update subscription state immediately
+            // Update subscription state immediately with full data
             setCurrentSubscription({
               hasSubscription: true,
               status: data.subscription.status,
               priceId: data.subscription.priceId,
               planName: data.subscription.planName,
               currentPeriodEnd: data.subscription.currentPeriodEnd,
+              currentPeriodStart: data.subscription.currentPeriodStart,
               cancelAtPeriodEnd: data.subscription.cancelAtPeriodEnd,
+              amount: data.subscription.amount,
+              currency: data.subscription.currency,
+              interval: data.subscription.interval,
               subscription: data.subscription
             });
             
             console.log('🎊 Subscription activated:', data.subscription.planName);
             
+            // Navigate to subscription tab
+            setActiveTab('subscription');
+            
             // Show success modal
             setSuccessModalData(data.subscription);
             setShowSuccessModal(true);
             
-            // Clean up URL
-            window.history.replaceState({}, document.title, window.location.pathname + window.location.hash.split('?')[0]);
+            // Clean up URL params but keep hash
+            window.history.replaceState({}, document.title, '/#dashboard/subscription');
           }
         } else {
           console.warn('⚠️ Payment verification failed');
+          // Still fetch subscription in case webhook already saved it
+          await fetchSubscription();
         }
       } catch (error) {
         console.error('❌ Error verifying payment:', error);
@@ -196,9 +230,17 @@ useEffect(() => {
     }
   };
 
-  // Check if current plan is active
+  // Check if current plan is active - handles all data structures
   const isCurrentPlan = (priceId) => {
-    return currentSubscription && currentSubscription.priceId === priceId;
+    if (!currentSubscription) return false;
+    
+    const currentPriceId = currentSubscription.priceId || 
+                          currentSubscription.price_id ||
+                          currentSubscription.subscription?.priceId;
+    
+    const isActive = currentSubscription.status === 'active';
+    
+    return currentPriceId === priceId && isActive;
   };
 
   // Handle tab changes and update URL
@@ -234,9 +276,10 @@ useEffect(() => {
     },
     { 
       id: 'meeting', 
-      label: 'Meeting Summarizer', 
+      label: 'Video Meeting', 
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        <path d="M23 7l-7 5 7 5V7z"/>
+        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
       </svg>
     },
     { 
@@ -367,29 +410,7 @@ useEffect(() => {
         );
       
       case 'meeting':
-        return (
-          <div className="content-section">
-            <div className="section-header">
-              <h1>📊 Meeting Summarizer</h1>
-              <p>Get AI-powered summaries of your meetings and interviews</p>
-            </div>
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-value">24</div>
-                <div className="stat-label">Meetings Summarized</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value">156</div>
-                <div className="stat-label">Key Points Extracted</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value">92%</div>
-                <div className="stat-label">Accuracy Rate</div>
-              </div>
-            </div>
-            <button className="primary-action-btn">Upload New Meeting</button>
-          </div>
-        );
+        return <MeetingRoom user={user} />;
       
       case 'history':
         return (
@@ -489,32 +510,160 @@ useEffect(() => {
         );
       
       case 'certificate':
+        const handleViewCertificate = (certType) => {
+          const certData = {
+            certificateId: null, // Will be auto-generated
+            issueDate: new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            achievements: {
+              interviewsCompleted: 15,
+              averageScore: 87,
+              skillsAssessed: ['Communication', 'Problem Solving', 'Technical Skills', 'Leadership'],
+              hoursCompleted: 12
+            }
+          };
+          setCertificateData(certData);
+          setShowCertificate(true);
+        };
+
         return (
           <div className="content-section">
             <div className="section-header">
-              <h1>📜 Certificates</h1>
-              <p>Earn and download your achievement certificates</p>
+              <h1>🏆 Your Certificates</h1>
+              <p>Professional certificates to showcase your interview mastery</p>
             </div>
-            <div className="certificate-grid">
-              <div className="certificate-card earned">
-                <div className="certificate-icon">✓</div>
-                <h3>Interview Mastery</h3>
-                <p>Completed 10 mock interviews</p>
-                <div className="certificate-date">Earned: Jan 15, 2026</div>
-                <button className="download-cert-btn">Download Certificate</button>
+
+            {/* Featured Certificate Banner */}
+            <div className="featured-certificate-banner">
+              <div className="banner-content">
+                <div className="banner-icon">🎓</div>
+                <div className="banner-text">
+                  <h3>TryInterview AI Certification</h3>
+                  <p>Showcase your professional interview skills to employers worldwide</p>
+                </div>
+                <button 
+                  className="banner-btn"
+                  onClick={() => handleViewCertificate('master')}
+                >
+                  <span className="btn-icon">📜</span>
+                  View Certificate
+                </button>
               </div>
-              <div className="certificate-card earned">
-                <div className="certificate-icon">✓</div>
-                <h3>Resume Expert</h3>
-                <p>Analyzed 5 resumes successfully</p>
-                <div className="certificate-date">Earned: Jan 20, 2026</div>
-                <button className="download-cert-btn">Download Certificate</button>
+            </div>
+
+            {/* Certificate Stats */}
+            <div className="certificate-stats">
+              <div className="stat-card">
+                <div className="stat-icon">🎯</div>
+                <div className="stat-value">15</div>
+                <div className="stat-label">Interviews Completed</div>
               </div>
+              <div className="stat-card">
+                <div className="stat-icon">⭐</div>
+                <div className="stat-value">87%</div>
+                <div className="stat-label">Average Score</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">🏅</div>
+                <div className="stat-value">4</div>
+                <div className="stat-label">Skills Mastered</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">⏱️</div>
+                <div className="stat-value">12h</div>
+                <div className="stat-label">Training Hours</div>
+              </div>
+            </div>
+
+            {/* Available Certificates */}
+            <div className="certificates-grid">
+              <div className="certificate-card earned">
+                <div className="cert-card-header">
+                  <div className="cert-badge earned-badge">✓ Earned</div>
+                </div>
+                <div className="cert-card-icon">🎓</div>
+                <h3>AI Interview Mastery</h3>
+                <p className="cert-description">
+                  Professional certification demonstrating excellence in AI-powered interview preparation
+                </p>
+                <div className="cert-stats-mini">
+                  <span>📊 15 Interviews</span>
+                  <span>⭐ 87% Score</span>
+                </div>
+                <div className="cert-date">Issued: {new Date().toLocaleDateString()}</div>
+                <button 
+                  className="cert-view-btn"
+                  onClick={() => handleViewCertificate('master')}
+                >
+                  <span>📜</span>
+                  View & Download
+                </button>
+              </div>
+
               <div className="certificate-card locked">
-                <div className="certificate-icon">🔒</div>
-                <h3>Question Master</h3>
-                <p>Complete 100 questions from the bank</p>
-                <div className="certificate-progress">Progress: 45/100</div>
+                <div className="cert-card-header">
+                  <div className="cert-badge locked-badge">🔒 Locked</div>
+                </div>
+                <div className="cert-card-icon cert-icon-locked">🏆</div>
+                <h3>Interview Expert</h3>
+                <p className="cert-description">
+                  Advanced certification for completing 50+ interviews with 90% average score
+                </p>
+                <div className="cert-progress-bar">
+                  <div className="progress-fill" style={{width: '30%'}}></div>
+                </div>
+                <div className="cert-requirement">
+                  <span>Progress: 15/50 interviews</span>
+                  <span>Current score: 87%</span>
+                </div>
+              </div>
+
+              <div className="certificate-card locked">
+                <div className="cert-card-header">
+                  <div className="cert-badge locked-badge">🔒 Locked</div>
+                </div>
+                <div className="cert-card-icon cert-icon-locked">💎</div>
+                <h3>Elite Interviewer</h3>
+                <p className="cert-description">
+                  Premium certification for achieving 100+ interviews with 95% average score
+                </p>
+                <div className="cert-progress-bar">
+                  <div className="progress-fill" style={{width: '15%'}}></div>
+                </div>
+                <div className="cert-requirement">
+                  <span>Progress: 15/100 interviews</span>
+                  <span>Current score: 87%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Certificate Benefits */}
+            <div className="cert-benefits-section">
+              <h3>📌 Why Certificates Matter</h3>
+              <div className="benefits-grid">
+                <div className="benefit-item">
+                  <div className="benefit-icon">💼</div>
+                  <h4>Stand Out to Employers</h4>
+                  <p>Verified credentials that prove your interview readiness</p>
+                </div>
+                <div className="benefit-item">
+                  <div className="benefit-icon">🔗</div>
+                  <h4>Share on LinkedIn</h4>
+                  <p>Add to your profile and showcase your achievements</p>
+                </div>
+                <div className="benefit-item">
+                  <div className="benefit-icon">✅</div>
+                  <h4>Verify Authenticity</h4>
+                  <p>Unique certificate IDs for employer verification</p>
+                </div>
+                <div className="benefit-item">
+                  <div className="benefit-icon">📈</div>
+                  <h4>Career Advancement</h4>
+                  <p>Demonstrate continuous professional development</p>
+                </div>
               </div>
             </div>
           </div>
@@ -552,7 +701,7 @@ useEffect(() => {
               <h1>💳 Subscription Plans</h1>
               <p>Choose the perfect plan for your interview preparation journey</p>
             </div>
-            
+
             {!isStripeConfigured() && (
               <div className="stripe-setup-notice">
                 <h3>⚠️ Stripe Setup Required</h3>
@@ -562,122 +711,177 @@ useEffect(() => {
                 </a>
               </div>
             )}
-            
+
             {loadingSubscription ? (
-  <div style={{ padding: '20px' }}>
-    <p>Checking your subscription...</p>
-  </div>
-) : (
-  <div className="pricing-grid">
-              <div className={`pricing-card ${isCurrentPlan(STRIPE_PRICES.STARTER) ? 'current-plan' : ''}`}>
-                <div className="plan-header">
-                  <div className="plan-name">Starter</div>
-                  {isCurrentPlan(STRIPE_PRICES.STARTER) && <span className="current-badge">Current Plan</span>}
-                </div>
-                <div className="plan-price">
-                  <span className="currency">$</span>
-                  <span className="amount">9</span>
-                  <span className="period">/month</span>
-                </div>
-                <ul className="plan-features">
-                  <li>✓ 5 mock interviews/month</li>
-                  <li>✓ Basic AI feedback</li>
-                  <li>✓ Resume analysis (1/month)</li>
-                  <li>✓ 100 practice questions</li>
-                  <li>✓ Email support</li>
-                </ul>
-                <button 
-                  className={`plan-btn ${isCurrentPlan(STRIPE_PRICES.STARTER) ? 'active' : ''}`}
-                  onClick={() => handleSubscribe('Starter', STRIPE_PRICES.STARTER)}
-                  disabled={loadingCheckout || isCurrentPlan(STRIPE_PRICES.STARTER)}
-                >
-                  {isCurrentPlan(STRIPE_PRICES.STARTER) ? '✓ Active' : loadingCheckout ? 'Processing...' : 'Choose Plan'}
-                </button>
+              <div style={{ padding: '20px' }}>
+                <p>Checking your subscription...</p>
               </div>
+            ) : (
+              <>
+                {/* Current Active Plan Banner - shown only when subscribed */}
+                {currentSubscription?.hasSubscription && (
+                  <div className="current-plan-banner">
+                    <div className="current-plan-banner-left">
+                      <div className="current-plan-badge">✓ Active Plan</div>
+                      <div className="current-plan-info">
+                        <h3>{currentSubscription.planName} Plan</h3>
+                        <p>
+                          {currentSubscription.amount && currentSubscription.currency && currentSubscription.interval
+                            ? `$${currentSubscription.amount} ${currentSubscription.currency.toUpperCase()}/${currentSubscription.interval}`
+                            : 'Subscription active'}
+                          {currentSubscription.cancelAtPeriodEnd
+                            ? ' · Cancels on ' + new Date(currentSubscription.currentPeriodEnd).toLocaleDateString()
+                            : currentSubscription.currentPeriodEnd
+                              ? ' · Renews on ' + new Date(currentSubscription.currentPeriodEnd).toLocaleDateString()
+                              : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="current-plan-banner-right">
+                      <button
+                        className="manage-subscription-btn"
+                        onClick={async () => {
+                          try {
+                            const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://tryinterview-backend.vercel.app';
+                            const response = await fetch(`${BACKEND_URL}/api/create-portal-session`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ userId: user.uid, email: user.email }),
+                            });
+                            const data = await response.json();
+                            if (data.url) window.location.href = data.url;
+                            else alert('Could not open billing portal. Please try again.');
+                          } catch (err) {
+                            console.error('Portal error:', err);
+                            alert('Could not open billing portal. Please try again.');
+                          }
+                        }}
+                      >
+                        Manage Subscription →
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-              <div className={`pricing-card popular ${isCurrentPlan(STRIPE_PRICES.PROFESSIONAL) ? 'current-plan' : ''}`}>
-                <div className="popular-badge">Most Popular</div>
-                <div className="plan-header">
-                  <div className="plan-name">Professional</div>
-                  {isCurrentPlan(STRIPE_PRICES.PROFESSIONAL) && <span className="current-badge">Current Plan</span>}
-                </div>
-                <div className="plan-price">
-                  <span className="currency">$</span>
-                  <span className="amount">25</span>
-                  <span className="period">/month</span>
-                </div>
-                <ul className="plan-features">
-                  <li>✓ Unlimited mock interviews</li>
-                  <li>✓ Advanced AI feedback</li>
-                  <li>✓ Unlimited resume analysis</li>
-                  <li>✓ Full question bank access</li>
-                  <li>✓ Priority support</li>
-                  <li>✓ Interview history</li>
-                </ul>
-                <button 
-                  className={`plan-btn ${isCurrentPlan(STRIPE_PRICES.PROFESSIONAL) ? 'active' : ''}`}
-                  onClick={() => handleSubscribe('Professional', STRIPE_PRICES.PROFESSIONAL)}
-                  disabled={loadingCheckout || isCurrentPlan(STRIPE_PRICES.PROFESSIONAL)}
-                >
-                  {isCurrentPlan(STRIPE_PRICES.PROFESSIONAL) ? '✓ Active' : loadingCheckout ? 'Processing...' : 'Choose Plan'}
-                </button>
-              </div>
+                {currentSubscription?.hasSubscription && (
+                  <h3 className="other-plans-label">Upgrade or change your plan:</h3>
+                )}
 
-              <div className={`pricing-card ${isCurrentPlan(STRIPE_PRICES.PREMIUM) ? 'current-plan' : ''}`}>
-                <div className="plan-header">
-                  <div className="plan-name">Premium</div>
-                  {isCurrentPlan(STRIPE_PRICES.PREMIUM) && <span className="current-badge">Current Plan</span>}
-                </div>
-                <div className="plan-price">
-                  <span className="currency">$</span>
-                  <span className="amount">50</span>
-                  <span className="period">/month</span>
-                </div>
-                <ul className="plan-features">
-                  <li>✓ Everything in Professional</li>
-                  <li>✓ 1-on-1 coaching sessions</li>
-                  <li>✓ Custom interview preparation</li>
-                  <li>✓ Career path guidance</li>
-                  <li>✓ LinkedIn profile review</li>
-                  <li>✓ Priority job referrals</li>
-                </ul>
-                <button 
-                  className={`plan-btn ${isCurrentPlan(STRIPE_PRICES.PREMIUM) ? 'active' : ''}`}
-                  onClick={() => handleSubscribe('Premium', STRIPE_PRICES.PREMIUM)}
-                  disabled={loadingCheckout || isCurrentPlan(STRIPE_PRICES.PREMIUM)}
-                >
-                  {isCurrentPlan(STRIPE_PRICES.PREMIUM) ? '✓ Active' : loadingCheckout ? 'Processing...' : 'Choose Plan'}
-                </button>
-              </div>
+                <div className="pricing-grid">
+                  <div className={`pricing-card ${isCurrentPlan(STRIPE_PRICES.STARTER) ? 'current-plan' : ''}`}>
+                    <div className="plan-header">
+                      <div className="plan-name">Starter</div>
+                      {isCurrentPlan(STRIPE_PRICES.STARTER) && <span className="current-badge">Current Plan</span>}
+                    </div>
+                    <div className="plan-price">
+                      <span className="currency">$</span>
+                      <span className="amount">9</span>
+                      <span className="period">/month</span>
+                    </div>
+                    <ul className="plan-features">
+                      <li>✓ 5 mock interviews/month</li>
+                      <li>✓ Basic AI feedback</li>
+                      <li>✓ Resume analysis (1/month)</li>
+                      <li>✓ 100 practice questions</li>
+                      <li>✓ Email support</li>
+                    </ul>
+                    <button
+                      className={`plan-btn ${isCurrentPlan(STRIPE_PRICES.STARTER) ? 'active' : ''}`}
+                      onClick={() => handleSubscribe('Starter', STRIPE_PRICES.STARTER)}
+                      disabled={loadingCheckout || isCurrentPlan(STRIPE_PRICES.STARTER)}
+                    >
+                      {isCurrentPlan(STRIPE_PRICES.STARTER) ? '✓ Current Plan' : loadingCheckout ? 'Processing...' : 'Choose Plan'}
+                    </button>
+                  </div>
 
-              <div className="pricing-card enterprise">
-                <div className="plan-name">Enterprise</div>
-                <div className="plan-price">
-                  <span className="currency">$</span>
-                  <span className="amount">99</span>
-                  <span className="period">/month</span>
+                  <div className={`pricing-card popular ${isCurrentPlan(STRIPE_PRICES.PROFESSIONAL) ? 'current-plan' : ''}`}>
+                    <div className="popular-badge">Most Popular</div>
+                    <div className="plan-header">
+                      <div className="plan-name">Professional</div>
+                      {isCurrentPlan(STRIPE_PRICES.PROFESSIONAL) && <span className="current-badge">Current Plan</span>}
+                    </div>
+                    <div className="plan-price">
+                      <span className="currency">$</span>
+                      <span className="amount">25</span>
+                      <span className="period">/month</span>
+                    </div>
+                    <ul className="plan-features">
+                      <li>✓ Unlimited mock interviews</li>
+                      <li>✓ Advanced AI feedback</li>
+                      <li>✓ Unlimited resume analysis</li>
+                      <li>✓ Full question bank access</li>
+                      <li>✓ Priority support</li>
+                      <li>✓ Interview history</li>
+                    </ul>
+                    <button
+                      className={`plan-btn ${isCurrentPlan(STRIPE_PRICES.PROFESSIONAL) ? 'active' : ''}`}
+                      onClick={() => handleSubscribe('Professional', STRIPE_PRICES.PROFESSIONAL)}
+                      disabled={loadingCheckout || isCurrentPlan(STRIPE_PRICES.PROFESSIONAL)}
+                    >
+                      {isCurrentPlan(STRIPE_PRICES.PROFESSIONAL) ? '✓ Current Plan' : loadingCheckout ? 'Processing...' : 'Choose Plan'}
+                    </button>
+                  </div>
+
+                  <div className={`pricing-card ${isCurrentPlan(STRIPE_PRICES.PREMIUM) ? 'current-plan' : ''}`}>
+                    <div className="plan-header">
+                      <div className="plan-name">Premium</div>
+                      {isCurrentPlan(STRIPE_PRICES.PREMIUM) && <span className="current-badge">Current Plan</span>}
+                    </div>
+                    <div className="plan-price">
+                      <span className="currency">$</span>
+                      <span className="amount">50</span>
+                      <span className="period">/month</span>
+                    </div>
+                    <ul className="plan-features">
+                      <li>✓ Everything in Professional</li>
+                      <li>✓ 1-on-1 coaching sessions</li>
+                      <li>✓ Custom interview preparation</li>
+                      <li>✓ Career path guidance</li>
+                      <li>✓ LinkedIn profile review</li>
+                      <li>✓ Priority job referrals</li>
+                    </ul>
+                    <button
+                      className={`plan-btn ${isCurrentPlan(STRIPE_PRICES.PREMIUM) ? 'active' : ''}`}
+                      onClick={() => handleSubscribe('Premium', STRIPE_PRICES.PREMIUM)}
+                      disabled={loadingCheckout || isCurrentPlan(STRIPE_PRICES.PREMIUM)}
+                    >
+                      {isCurrentPlan(STRIPE_PRICES.PREMIUM) ? '✓ Current Plan' : loadingCheckout ? 'Processing...' : 'Choose Plan'}
+                    </button>
+                  </div>
+
+                  <div className={`pricing-card enterprise ${isCurrentPlan(STRIPE_PRICES.ENTERPRISE) ? 'current-plan' : ''}`}>
+                    <div className="plan-header">
+                      <div className="plan-name">Enterprise</div>
+                      {isCurrentPlan(STRIPE_PRICES.ENTERPRISE) && <span className="current-badge">Current Plan</span>}
+                    </div>
+                    <div className="plan-price">
+                      <span className="currency">$</span>
+                      <span className="amount">99</span>
+                      <span className="period">/month</span>
+                    </div>
+                    <ul className="plan-features">
+                      <li>✓ Everything in Premium</li>
+                      <li>✓ Dedicated account manager</li>
+                      <li>✓ Company-specific training</li>
+                      <li>✓ Team collaboration tools</li>
+                      <li>✓ Custom integrations</li>
+                      <li>✓ Quarterly success reviews</li>
+                      <li>✓ Guaranteed job placement support</li>
+                    </ul>
+                    <button
+                      className={`plan-btn ${isCurrentPlan(STRIPE_PRICES.ENTERPRISE) ? 'active' : ''}`}
+                      onClick={() => handleSubscribe('Enterprise', STRIPE_PRICES.ENTERPRISE)}
+                      disabled={loadingCheckout || isCurrentPlan(STRIPE_PRICES.ENTERPRISE)}
+                    >
+                      {isCurrentPlan(STRIPE_PRICES.ENTERPRISE) ? '✓ Current Plan' : loadingCheckout ? 'Loading...' : 'Contact Sales'}
+                    </button>
+                  </div>
                 </div>
-                <ul className="plan-features">
-                  <li>✓ Everything in Premium</li>
-                  <li>✓ Dedicated account manager</li>
-                  <li>✓ Company-specific training</li>
-                  <li>✓ Team collaboration tools</li>
-                  <li>✓ Custom integrations</li>
-                  <li>✓ Quarterly success reviews</li>
-                  <li>✓ Guaranteed job placement support</li>
-                </ul>
-                <button 
-                  className="plan-btn" 
-                  onClick={() => handleSubscribe('Enterprise', STRIPE_PRICES.ENTERPRISE)}
-                  disabled={loadingCheckout}
-                >
-                  {loadingCheckout ? 'Loading...' : 'Contact Sales'}
-                </button>
-              </div>
-            </div>)}
+              </>
+            )}
           </div>
         );
-      
+
       case 'profile':
         return (
           <div className="content-section">
@@ -925,6 +1129,15 @@ useEffect(() => {
           {renderContent()}
         </div>
       </main>
+
+      {/* Certificate Modal */}
+      {showCertificate && (
+        <Certificate
+          user={user}
+          certificateData={certificateData}
+          onClose={() => setShowCertificate(false)}
+        />
+      )}
     </div>
   );
 };
