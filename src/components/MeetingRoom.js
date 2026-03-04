@@ -280,9 +280,11 @@ const MeetingRoom = () => {
 
 // Meeting Room UI Component (inside the call)
 const MeetingRoomUI = ({ meetingId, onLeave, onCopyLink, isCopied, activeTab, setActiveTab }) => {
-  const { useParticipantCount, useCallCallingState } = useCallStateHooks();
+  const { useParticipantCount, useCallCallingState, useMicrophoneState, useCameraState } = useCallStateHooks();
   const participantCount = useParticipantCount();
   const callingState = useCallCallingState();
+  const { microphone, isMute } = useMicrophoneState();
+  const { camera, isMute: isCameraOff } = useCameraState();
   
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
@@ -293,6 +295,9 @@ const MeetingRoomUI = ({ meetingId, onLeave, onCopyLink, isCopied, activeTab, se
   const [handRaised, setHandRaised] = useState(false);
   const [reaction, setReaction] = useState(null);
   const [networkQuality] = useState('good'); // Can be enhanced with real network detection
+  const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [showControlTooltip, setShowControlTooltip] = useState(null);
   const chatEndRef = useRef(null);
   const recordingIntervalRef = useRef(null);
   const meetingTimerRef = useRef(null);
@@ -392,6 +397,57 @@ const MeetingRoomUI = ({ meetingId, onLeave, onCopyLink, isCopied, activeTab, se
   const saveNotes = () => {
     localStorage.setItem(`meeting-notes-${meetingId}`, notes);
     alert('Notes saved successfully!');
+  };
+
+  // Toggle microphone
+  const toggleMicrophone = async () => {
+    try {
+      if (isMute) {
+        await microphone.enable();
+      } else {
+        await microphone.disable();
+      }
+    } catch (error) {
+      console.error('Error toggling microphone:', error);
+    }
+  };
+
+  // Toggle camera
+  const toggleCamera = async () => {
+    try {
+      if (isCameraOff) {
+        await camera.enable();
+      } else {
+        await camera.disable();
+      }
+    } catch (error) {
+      console.error('Error toggling camera:', error);
+    }
+  };
+
+  // Toggle speaker
+  const toggleSpeaker = () => {
+    setIsSpeakerOn(!isSpeakerOn);
+    // In a real implementation, this would control audio output device
+    alert(isSpeakerOn ? 'Speaker muted' : 'Speaker unmuted');
+  };
+
+  // Share screen
+  const toggleScreenShare = async () => {
+    try {
+      setIsScreenSharing(!isScreenSharing);
+      // Screen sharing would be implemented with Stream SDK's screen share API
+      alert(!isScreenSharing ? 'Screen sharing started' : 'Screen sharing stopped');
+    } catch (error) {
+      console.error('Error toggling screen share:', error);
+    }
+  };
+
+  // Copy meeting link (enhanced)
+  const copyMeetingLinkControl = () => {
+    onCopyLink();
+    setShowControlTooltip('link');
+    setTimeout(() => setShowControlTooltip(null), 2000);
   };
 
   // Load notes on mount
@@ -729,7 +785,128 @@ const MeetingRoomUI = ({ meetingId, onLeave, onCopyLink, isCopied, activeTab, se
 
       {/* Bottom Controls */}
       <div className="meeting-controls-bar">
-        <CallControls onLeave={onLeave} />
+        <div className="custom-controls-container">
+          {/* Microphone Control */}
+          <div className="control-item">
+            <button
+              className={`control-button ${isMute ? 'muted' : 'active'}`}
+              onClick={toggleMicrophone}
+              onMouseEnter={() => setShowControlTooltip('mic')}
+              onMouseLeave={() => setShowControlTooltip(null)}
+            >
+              <span className="control-icon">
+                {isMute ? '🎤' : '🎤'}
+              </span>
+              {isMute && <span className="mute-slash">⚠️</span>}
+            </button>
+            {showControlTooltip === 'mic' && (
+              <div className="control-tooltip">
+                {isMute ? 'Unmute' : 'Mute'}
+              </div>
+            )}
+            <span className="control-label">{isMute ? 'Unmute' : 'Mute'}</span>
+          </div>
+
+          {/* Camera Control */}
+          <div className="control-item">
+            <button
+              className={`control-button ${isCameraOff ? 'muted' : 'active'}`}
+              onClick={toggleCamera}
+              onMouseEnter={() => setShowControlTooltip('camera')}
+              onMouseLeave={() => setShowControlTooltip(null)}
+            >
+              <span className="control-icon">
+                {isCameraOff ? '📹' : '📹'}
+              </span>
+              {isCameraOff && <span className="mute-slash">⚠️</span>}
+            </button>
+            {showControlTooltip === 'camera' && (
+              <div className="control-tooltip">
+                {isCameraOff ? 'Turn On Camera' : 'Turn Off Camera'}
+              </div>
+            )}
+            <span className="control-label">{isCameraOff ? 'Start Video' : 'Stop Video'}</span>
+          </div>
+
+          {/* Speaker Control */}
+          <div className="control-item">
+            <button
+              className={`control-button ${!isSpeakerOn ? 'muted' : 'active'}`}
+              onClick={toggleSpeaker}
+              onMouseEnter={() => setShowControlTooltip('speaker')}
+              onMouseLeave={() => setShowControlTooltip(null)}
+            >
+              <span className="control-icon">
+                {isSpeakerOn ? '🔊' : '🔇'}
+              </span>
+            </button>
+            {showControlTooltip === 'speaker' && (
+              <div className="control-tooltip">
+                {isSpeakerOn ? 'Mute Speaker' : 'Unmute Speaker'}
+              </div>
+            )}
+            <span className="control-label">{isSpeakerOn ? 'Speaker' : 'Speaker Off'}</span>
+          </div>
+
+          {/* Screen Share Control */}
+          <div className="control-item">
+            <button
+              className={`control-button ${isScreenSharing ? 'active-sharing' : ''}`}
+              onClick={toggleScreenShare}
+              onMouseEnter={() => setShowControlTooltip('share')}
+              onMouseLeave={() => setShowControlTooltip(null)}
+            >
+              <span className="control-icon">🖥️</span>
+            </button>
+            {showControlTooltip === 'share' && (
+              <div className="control-tooltip">
+                {isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
+              </div>
+            )}
+            <span className="control-label">{isScreenSharing ? 'Stop Share' : 'Share Screen'}</span>
+          </div>
+
+          {/* Copy Link Control */}
+          <div className="control-item">
+            <button
+              className={`control-button ${isCopied ? 'copied' : ''}`}
+              onClick={copyMeetingLinkControl}
+              onMouseEnter={() => setShowControlTooltip('link')}
+              onMouseLeave={() => setShowControlTooltip(null)}
+            >
+              <span className="control-icon">
+                {isCopied ? '✓' : '🔗'}
+              </span>
+            </button>
+            {showControlTooltip === 'link' && (
+              <div className="control-tooltip">
+                {isCopied ? 'Copied!' : 'Copy Meeting Link'}
+              </div>
+            )}
+            <span className="control-label">{isCopied ? 'Copied!' : 'Copy Link'}</span>
+          </div>
+
+          {/* Divider */}
+          <div className="controls-divider"></div>
+
+          {/* End Call Control */}
+          <div className="control-item">
+            <button
+              className="control-button end-call"
+              onClick={onLeave}
+              onMouseEnter={() => setShowControlTooltip('end')}
+              onMouseLeave={() => setShowControlTooltip(null)}
+            >
+              <span className="control-icon">📞</span>
+            </button>
+            {showControlTooltip === 'end' && (
+              <div className="control-tooltip end-tooltip">
+                Leave Meeting
+              </div>
+            )}
+            <span className="control-label">End Call</span>
+          </div>
+        </div>
       </div>
     </div>
   );

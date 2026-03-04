@@ -1641,3 +1641,496 @@
   }
 }
 
+
+/* ============================================
+   CUSTOM CONTROLS BAR - PROFESSIONAL
+   ============================================ */
+.custom-controls-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.control-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-button {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.control-button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.control-button:active {
+  transform: translateY(-2px);
+}
+
+.control-button.active {
+  background: rgba(102, 126, 234, 0.3);
+  border: 2px solid rgba(102, 126, 234, 0.5);
+}
+
+.control-button.muted {
+  background: rgba(239, 68, 68, 0.3);
+  border: 2px solid rgba(239, 68, 68, 0.5);
+}
+
+.control-button.muted:hover {
+  background: rgba(239, 68, 68, 0.4);
+  border-color: rgba(239, 68, 68, 0.7);
+}
+
+.control-button.active-sharing {
+  background: rgba(16, 185, 129, 0.3);
+  border: 2px solid rgba(16, 185, 129, 0.5);
+  animation: pulse-sharing 2s ease infinite;
+}
+
+@keyframes pulse-sharing {
+  0%, 100% {
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 25px rgba(16, 185, 129, 0.6);
+  }
+}
+
+.control-button.copied {
+  background: rgba(16, 185, 129, 0.3);
+  border: 2px solid rgba(16, 185, 129, 0.5);
+}
+
+.control-button.end-call {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: 2px solid rgba(239, 68, 68, 0.8);
+  width: 64px;
+  height: 64px;
+}
+
+.control-button.end-call:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 8px 30px rgba(239, 68, 68, 0.5);
+}
+
+.control-icon {
+  font-size: 1.8rem;
+  position: relative;
+  z-index: 1;
+}
+
+.control-button.end-call .control-icon {
+  font-size: 2rem;
+  transform: rotate(135deg);
+}
+
+.mute-slash {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.9rem;
+  background: rgba(239, 68, 68, 0.9);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse-warning 1.5s ease infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.control-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.control-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(10px);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  animation: tooltipFadeIn 0.2s ease;
+  pointer-events: none;
+}
+
+.control-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(0, 0, 0, 0.95);
+}
+
+.control-tooltip.end-tooltip {
+  background: rgba(239, 68, 68, 0.95);
+}
+
+.control-tooltip.end-tooltip::after {
+  border-top-color: rgba(239, 68, 68, 0.95);
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.controls-divider {
+  width: 2px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 8px;
+}
+
+/* ============================================
+   RESPONSIVE CONTROLS - MOBILE
+   ============================================ */
+@media (max-width: 768px) {
+  .custom-controls-container {
+    gap: 8px;
+    padding: 0 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .control-button {
+    width: 48px;
+    height: 48px;
+  }
+
+  .control-button.end-call {
+    width: 56px;
+    height: 56px;
+  }
+
+  .control-icon {
+    font-size: 1.5rem;
+  }
+
+  .control-button.end-call .control-icon {
+    font-size: 1.7rem;
+  }
+
+  .control-label {
+    font-size: 0.65rem;
+  }
+
+  .controls-divider {
+    display: none;
+  }
+
+  .mute-slash {
+    width: 18px;
+    height: 18px;
+    font-size: 0.75rem;
+  }
+
+  .control-tooltip {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .custom-controls-container {
+    gap: 6px;
+    padding: 0 8px;
+  }
+
+  .control-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .control-button.end-call {
+    width: 52px;
+    height: 52px;
+  }
+
+  .control-icon {
+    font-size: 1.3rem;
+  }
+
+  .control-button.end-call .control-icon {
+    font-size: 1.5rem;
+  }
+
+  .control-label {
+    font-size: 0.6rem;
+  }
+
+  .mute-slash {
+    width: 16px;
+    height: 16px;
+    font-size: 0.65rem;
+  }
+}
+
+/* ============================================
+   ENHANCED MEETING CONTROLS BAR
+   ============================================ */
+.meeting-controls-bar {
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  padding: 20px;
+  border-top: 1px solid rgba(102, 126, 234, 0.3);
+  z-index: 100;
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================
+   CONTROL BUTTON STATES & ANIMATIONS
+   ============================================ */
+.control-button.active::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.5), rgba(118, 75, 162, 0.5));
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.control-button.active:hover::before {
+  opacity: 1;
+  animation: pulse-glow 2s ease infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.control-button.muted::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.5), rgba(220, 38, 38, 0.5));
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.control-button.muted:hover::before {
+  opacity: 1;
+  animation: pulse-danger 2s ease infinite;
+}
+
+@keyframes pulse-danger {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* Screen sharing indicator */
+.control-button.active-sharing::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(16, 185, 129, 0.6);
+  animation: ripple-effect 1.5s ease infinite;
+}
+
+@keyframes ripple-effect {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+/* Copied state animation */
+.control-button.copied {
+  animation: success-bounce 0.5s ease;
+}
+
+@keyframes success-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY ENHANCEMENTS
+   ============================================ */
+.control-button:focus {
+  outline: 2px solid rgba(102, 126, 234, 0.8);
+  outline-offset: 2px;
+}
+
+.control-button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.control-button:focus-visible {
+  outline: 2px solid rgba(102, 126, 234, 0.8);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   TABLET SPECIFIC
+   ============================================ */
+@media (min-width: 481px) and (max-width: 768px) {
+  .custom-controls-container {
+    gap: 10px;
+  }
+
+  .control-button {
+    width: 52px;
+    height: 52px;
+  }
+
+  .control-button.end-call {
+    width: 60px;
+    height: 60px;
+  }
+
+  .control-label {
+    font-size: 0.7rem;
+  }
+}
+
+/* ============================================
+   DESKTOP LARGE SCREENS
+   ============================================ */
+@media (min-width: 1440px) {
+  .control-button {
+    width: 64px;
+    height: 64px;
+  }
+
+  .control-button.end-call {
+    width: 72px;
+    height: 72px;
+  }
+
+  .control-icon {
+    font-size: 2rem;
+  }
+
+  .control-button.end-call .control-icon {
+    font-size: 2.2rem;
+  }
+
+  .control-label {
+    font-size: 0.8rem;
+  }
+}
+
+/* ============================================
+   HOVER EFFECTS - DESKTOP ONLY
+   ============================================ */
+@media (hover: hover) and (pointer: fine) {
+  .control-item:hover .control-label {
+    color: white;
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+  }
+
+  .control-button:hover .control-icon {
+    transform: scale(1.1);
+    transition: transform 0.3s ease;
+  }
+
+  .control-button.end-call:hover .control-icon {
+    transform: rotate(135deg) scale(1.15);
+  }
+}
+
+/* ============================================
+   TOUCH DEVICES - NO HOVER
+   ============================================ */
+@media (hover: none) and (pointer: coarse) {
+  .control-button:hover {
+    transform: none;
+  }
+
+  .control-button:active {
+    transform: scale(0.95);
+  }
+
+  .control-tooltip {
+    display: none;
+  }
+}
+
