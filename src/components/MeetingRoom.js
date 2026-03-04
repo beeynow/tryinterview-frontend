@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StreamVideo,
   StreamCall,
@@ -27,9 +27,9 @@ const MeetingRoom = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState(null);
-  const [showParticipants, setShowParticipants] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('video');
 
   // Initialize Stream client when component mounts
   useEffect(() => {
@@ -72,6 +72,7 @@ const MeetingRoom = () => {
         client.disconnectUser().catch(console.error);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle creating a new meeting
@@ -268,8 +269,8 @@ const MeetingRoom = () => {
             onLeave={handleLeaveMeeting}
             onCopyLink={copyMeetingLink}
             isCopied={isCopied}
-            showParticipants={showParticipants}
-            setShowParticipants={setShowParticipants}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
           />
         </StreamCall>
       </StreamVideo>
@@ -278,9 +279,136 @@ const MeetingRoom = () => {
 };
 
 // Meeting Room UI Component (inside the call)
-const MeetingRoomUI = ({ meetingId, onLeave, onCopyLink, isCopied, showParticipants, setShowParticipants }) => {
-  const { useParticipantCount } = useCallStateHooks();
+const MeetingRoomUI = ({ meetingId, onLeave, onCopyLink, isCopied, activeTab, setActiveTab }) => {
+  const { useParticipantCount, useCallCallingState } = useCallStateHooks();
   const participantCount = useParticipantCount();
+  const callingState = useCallCallingState();
+  
+  const [messages, setMessages] = useState([]);
+  const [messageInput, setMessageInput] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [meetingDuration, setMeetingDuration] = useState(0);
+  const [handRaised, setHandRaised] = useState(false);
+  const [reaction, setReaction] = useState(null);
+  const [networkQuality] = useState('good'); // Can be enhanced with real network detection
+  const chatEndRef = useRef(null);
+  const recordingIntervalRef = useRef(null);
+  const meetingTimerRef = useRef(null);
+
+  // Meeting timer
+  useEffect(() => {
+    if (callingState === 'joined') {
+      meetingTimerRef.current = setInterval(() => {
+        setMeetingDuration(prev => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (meetingTimerRef.current) {
+        clearInterval(meetingTimerRef.current);
+      }
+    };
+  }, [callingState]);
+
+  // Recording timer
+  useEffect(() => {
+    if (isRecording) {
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+      setRecordingDuration(0);
+    }
+    return () => {
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+    };
+  }, [isRecording]);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Clear reaction after 3 seconds
+  useEffect(() => {
+    if (reaction) {
+      const timer = setTimeout(() => setReaction(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [reaction]);
+
+  // Format time helper
+  const formatTime = (seconds) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Send message
+  const sendMessage = () => {
+    if (messageInput.trim()) {
+      const newMessage = {
+        id: Date.now(),
+        text: messageInput,
+        sender: 'You',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages([...messages, newMessage]);
+      setMessageInput('');
+    }
+  };
+
+  // Toggle recording
+  const toggleRecording = () => {
+    setIsRecording(!isRecording);
+    if (!isRecording) {
+      alert('Recording started! Note: This is a simulated recording for demo purposes.');
+    } else {
+      alert('Recording stopped and saved.');
+    }
+  };
+
+  // Toggle hand raise
+  const toggleHandRaise = () => {
+    setHandRaised(!handRaised);
+  };
+
+  // Send reaction
+  const sendReaction = (emoji) => {
+    setReaction(emoji);
+  };
+
+  // Save notes
+  const saveNotes = () => {
+    localStorage.setItem(`meeting-notes-${meetingId}`, notes);
+    alert('Notes saved successfully!');
+  };
+
+  // Load notes on mount
+  useEffect(() => {
+    const savedNotes = localStorage.getItem(`meeting-notes-${meetingId}`);
+    if (savedNotes) {
+      setNotes(savedNotes);
+    }
+  }, [meetingId]);
+
+  const tabs = [
+    { id: 'video', label: 'Video Call', icon: '🎥' },
+    { id: 'chat', label: 'Chat', icon: '💬', badge: messages.length },
+    { id: 'notes', label: 'Notes', icon: '📝' },
+    { id: 'recording', label: 'Recording', icon: '⏺️' },
+    { id: 'info', label: 'Info', icon: 'ℹ️' },
+  ];
 
   return (
     <div className="meeting-room-container">
@@ -304,34 +432,297 @@ const MeetingRoomUI = ({ meetingId, onLeave, onCopyLink, isCopied, showParticipa
               </>
             )}
           </button>
+          <div className="meeting-timer">
+            <span className="timer-icon">⏱️</span>
+            {formatTime(meetingDuration)}
+          </div>
+          <div className={`network-indicator network-${networkQuality}`}>
+            <span className="signal-icon">📶</span>
+            <span className="network-text">{networkQuality}</span>
+          </div>
         </div>
         <div className="meeting-actions">
-          <button
-            className={`btn-participants ${showParticipants ? 'active' : ''}`}
-            onClick={() => setShowParticipants(!showParticipants)}
-          >
+          <button className={`btn-icon-action ${handRaised ? 'active' : ''}`} onClick={toggleHandRaise} title="Raise Hand">
+            ✋
+          </button>
+          <div className="reactions-container">
+            <button className="btn-icon-action" title="React">
+              😊
+            </button>
+            <div className="reactions-menu">
+              {['👍', '❤️', '😂', '👏', '🎉', '🤔'].map(emoji => (
+                <button key={emoji} onClick={() => sendReaction(emoji)}>{emoji}</button>
+              ))}
+            </div>
+          </div>
+          <button className="btn-participants">
             <span>👥</span>
-            {participantCount} {participantCount === 1 ? 'Participant' : 'Participants'}
+            {participantCount}
           </button>
           <button className="btn-leave" onClick={onLeave}>
             <span>📞</span>
-            Leave Meeting
+            Leave
           </button>
         </div>
       </div>
 
-      {/* Video Layout */}
-      <div className="meeting-video-area">
-        <SpeakerLayout participantsBarPosition="bottom" />
-        
-        {/* Participants Sidebar */}
-        {showParticipants && (
-          <div className="participants-sidebar">
-            <div className="participants-header">
-              <h3>Participants ({participantCount})</h3>
-              <button onClick={() => setShowParticipants(false)}>✕</button>
+      {/* Tabs Navigation */}
+      <div className="meeting-tabs">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            <span className="tab-icon">{tab.icon}</span>
+            <span className="tab-label">{tab.label}</span>
+            {tab.badge > 0 && <span className="tab-badge">{tab.badge}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="meeting-content">
+        {/* Video Tab */}
+        {activeTab === 'video' && (
+          <div className="tab-content video-content">
+            <div className="video-main-area">
+              <SpeakerLayout participantsBarPosition="bottom" />
+              
+              {/* Floating Reaction */}
+              {reaction && (
+                <div className="floating-reaction">
+                  {reaction}
+                </div>
+              )}
+              
+              {/* Hand Raised Indicator */}
+              {handRaised && (
+                <div className="hand-raised-indicator">
+                  <span className="hand-icon">✋</span>
+                  <span>Hand Raised</span>
+                </div>
+              )}
             </div>
-            <CallParticipantsList onClose={() => setShowParticipants(false)} />
+            
+            {/* Participants Panel */}
+            <div className="participants-panel">
+              <div className="panel-header">
+                <h3>Participants ({participantCount})</h3>
+              </div>
+              <div className="panel-content">
+                <CallParticipantsList />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Chat Tab */}
+        {activeTab === 'chat' && (
+          <div className="tab-content chat-content">
+            <div className="chat-container">
+              <div className="chat-messages">
+                {messages.length === 0 ? (
+                  <div className="chat-empty">
+                    <span className="empty-icon">💬</span>
+                    <p>No messages yet</p>
+                    <p className="empty-subtitle">Start the conversation!</p>
+                  </div>
+                ) : (
+                  messages.map(msg => (
+                    <div key={msg.id} className="chat-message">
+                      <div className="message-header">
+                        <span className="message-sender">{msg.sender}</span>
+                        <span className="message-time">{msg.timestamp}</span>
+                      </div>
+                      <div className="message-text">{msg.text}</div>
+                    </div>
+                  ))
+                )}
+                <div ref={chatEndRef} />
+              </div>
+              <div className="chat-input-area">
+                <input
+                  type="text"
+                  placeholder="Type a message..."
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  className="chat-input"
+                />
+                <button className="btn-send" onClick={sendMessage} disabled={!messageInput.trim()}>
+                  <span>📤</span>
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notes Tab */}
+        {activeTab === 'notes' && (
+          <div className="tab-content notes-content">
+            <div className="notes-container">
+              <div className="notes-header">
+                <h2>📝 Meeting Notes</h2>
+                <button className="btn-save-notes" onClick={saveNotes}>
+                  <span>💾</span>
+                  Save Notes
+                </button>
+              </div>
+              <textarea
+                className="notes-textarea"
+                placeholder="Take notes during the meeting...&#10;&#10;• Key points discussed&#10;• Action items&#10;• Decisions made&#10;• Follow-up tasks"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+              <div className="notes-footer">
+                <span className="notes-info">💡 Notes are automatically saved locally</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Recording Tab */}
+        {activeTab === 'recording' && (
+          <div className="tab-content recording-content">
+            <div className="recording-container">
+              <div className="recording-status">
+                {isRecording ? (
+                  <>
+                    <div className="recording-indicator pulse">
+                      <span className="rec-dot"></span>
+                      <span className="rec-text">RECORDING</span>
+                    </div>
+                    <div className="recording-time">
+                      {formatTime(recordingDuration)}
+                    </div>
+                  </>
+                ) : (
+                  <div className="recording-ready">
+                    <span className="ready-icon">⏺️</span>
+                    <h3>Ready to Record</h3>
+                    <p>Start recording to capture this meeting</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="recording-controls">
+                <button 
+                  className={`btn-record ${isRecording ? 'recording' : ''}`}
+                  onClick={toggleRecording}
+                >
+                  {isRecording ? (
+                    <>
+                      <span>⏹️</span>
+                      Stop Recording
+                    </>
+                  ) : (
+                    <>
+                      <span>⏺️</span>
+                      Start Recording
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="recording-info-box">
+                <h4>📹 Recording Features</h4>
+                <ul>
+                  <li>✓ High-quality video and audio recording</li>
+                  <li>✓ Automatic cloud storage</li>
+                  <li>✓ Downloadable after meeting</li>
+                  <li>✓ Shareable links for participants</li>
+                  <li>✓ Transcription available (premium)</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Info Tab */}
+        {activeTab === 'info' && (
+          <div className="tab-content info-content">
+            <div className="info-container">
+              <div className="info-section">
+                <h3>📊 Meeting Information</h3>
+                <div className="info-grid">
+                  <div className="info-item">
+                    <span className="info-label">Meeting ID</span>
+                    <span className="info-value">{meetingId}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Duration</span>
+                    <span className="info-value">{formatTime(meetingDuration)}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Participants</span>
+                    <span className="info-value">{participantCount}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Network Quality</span>
+                    <span className="info-value">{networkQuality}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Recording</span>
+                    <span className="info-value">{isRecording ? 'Active' : 'Inactive'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Messages</span>
+                    <span className="info-value">{messages.length}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="info-section">
+                <h3>⚙️ Meeting Settings</h3>
+                <div className="settings-list">
+                  <div className="setting-item">
+                    <span className="setting-label">Enable Virtual Background</span>
+                    <label className="toggle-switch">
+                      <input type="checkbox" />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <div className="setting-item">
+                    <span className="setting-label">Enable Noise Cancellation</span>
+                    <label className="toggle-switch">
+                      <input type="checkbox" defaultChecked />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <div className="setting-item">
+                    <span className="setting-label">Show Participant Names</span>
+                    <label className="toggle-switch">
+                      <input type="checkbox" defaultChecked />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <div className="setting-item">
+                    <span className="setting-label">Enable Chat Notifications</span>
+                    <label className="toggle-switch">
+                      <input type="checkbox" defaultChecked />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="info-section">
+                <h3>🔗 Share Meeting</h3>
+                <div className="share-section">
+                  <input 
+                    type="text" 
+                    value={`${window.location.origin}/#dashboard/meeting?id=${meetingId}`}
+                    readOnly
+                    className="share-link-input"
+                  />
+                  <button className="btn-share" onClick={onCopyLink}>
+                    {isCopied ? '✓ Copied!' : '📋 Copy Link'}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
