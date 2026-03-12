@@ -43,7 +43,10 @@
 }
 
 .modal-header {
-  text-align: center;
+  display: flex;           /* turn it into flex */
+  flex-direction: column;  /* stack logo, heading, and text vertically */
+  align-items: center;     /* center horizontally */
+  text-align: center;      /* optional, for the text */
   margin-bottom: 40px;
 }
 

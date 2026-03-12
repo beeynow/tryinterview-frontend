@@ -1055,19 +1055,50 @@ useEffect(() => {
         ></div>
       )}
 
-      {/* Left Sidebar */}
       <aside className={`dashboard-sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-        <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="TryInterview" />
-            {!sidebarCollapsed && <span>TryInterview</span>}
-          </div>
-          <button className="collapse-btn" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d={sidebarCollapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"} />
-            </svg>
-          </button>
-        </div>
+  <div className="sidebar-header">
+    <div className="sidebar-logo">
+      {!sidebarCollapsed ? (
+        <>
+          <img 
+            src={`${process.env.PUBLIC_URL}/logo.png`} 
+            alt="TryInterview" 
+            className="logo-img"
+          />
+          <span className="logo-text">TryInterview</span>
+        </>
+      ) : (
+        /* Hamburger-style icon when collapsed */
+        <button 
+          className="collapsed-menu-icon" 
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Open menu"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {mobileMenuOpen ? (
+              <path d="M18 6L6 18M6 6l12 12" /> // X icon
+            ) : (
+              <>
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </>
+            )}
+          </svg>
+        </button>
+      )}
+    </div>
+
+    {/* Collapse/Expand Sidebar Button */}
+    <button 
+      className="collapse-btn" 
+      onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d={sidebarCollapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"} />
+      </svg>
+    </button>
+  </div>
 
         <nav className="sidebar-nav">
           <div className="nav-section">
